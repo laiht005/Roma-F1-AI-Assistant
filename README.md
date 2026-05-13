@@ -10,6 +10,7 @@ features
 3.  **Race Prediction (توقع السباقات):** Predicts the top 5 winners for upcoming races using a machine learning model.
 4.  **Virtual Race Simulator (محاكي السباق):** A highly interactive UI that allows users to tweak race conditions (Grid position, weather, recent form) and instantly see the XGBoost win probability.
 ---------------------------------------------------------
+```
 Browser Mic (Custom HTML/Tailwind SPA)
     ↓
 1️⃣ ASR Layer: HuggingFace Whisper (Fine-tuned on Levantine Arabic, 37% WER)
@@ -23,7 +24,7 @@ Browser Mic (Custom HTML/Tailwind SPA)
 4️⃣ ML Engine: XGBoost Classifier (PSO-optimized, exponential decay-weighted)
     ↓
 5️⃣ Response Layer: Arabic Template Generator -> FastAPI -> Frontend
-
+```
 Run the code 
 open the front.html file then run this command 
 uvicorn main:app --reload --port 8000

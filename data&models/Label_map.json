@@ -1,0 +1,10 @@
+{
+    "0": "compare_drivers",
+    "1": "get_constructor_standings",
+    "2": "get_driver_info",
+    "3": "get_driver_standings",
+    "4": "get_race_calendar",
+    "5": "get_race_result",
+    "6": "predict_next_n_races",
+    "7": "predict_next_race"
+}

@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>روما | مساعد الفورمولا 1 الذكي</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { cairo: ['Cairo', 'sans-serif'] },
+                    colors: { f1red: '#e10600', darkbg: '#15151e', panel: '#1f1f2d', panelLight: '#2a2a3d' }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body { font-family: 'Cairo', sans-serif; background-color: #15151e; color: white; overflow: hidden; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .bot-message { white-space: pre-wrap; }
+        .loading-dots:after { content: ' .'; animation: dots 1.5s steps(5, end) infinite; }
+        @keyframes dots { 0%, 20% { content: ' .'; } 40% { content: ' ..'; } 60% { content: ' ...'; } }
+        
+        .tab-content { display: none; height: 100%; }
+        .tab-content.active { display: flex; flex-direction: column; }
+        .nav-btn.active { border-bottom: 3px solid #e10600; color: white; }
+
+        /* Glassmorphism & Neon Effects */
+        .glass-panel {
+            background: rgba(31, 31, 45, 0.65);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+        }
+        .neon-border:hover {
+            border-color: rgba(225, 6, 0, 0.5);
+            box-shadow: 0 0 15px rgba(225, 6, 0, 0.2);
+        }
+        .neon-border-cyan:hover {
+            border-color: rgba(6, 182, 212, 0.5);
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.2);
+        }
+        
+        /* Custom UI Controls */
+        input[type=range] { accent-color: #e10600; cursor: pointer; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(31, 31, 45, 0.5); border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(6, 182, 212, 0.5); border-radius: 4px; }
+    </style>
+</head>
+
+<body class="h-screen flex flex-col">
+    <header class="bg-panel border-b border-gray-800 p-4 shadow-lg z-50 relative">
+        <div class="flex justify-between items-center mb-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-white p-1.5 rounded-lg flex items-center justify-center shadow-inner">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/3/33/F1.svg" alt="F1 Logo" class="max-w-[45px] h-auto">
+                </div>
+                <h1 class="text-xl font-extrabold tracking-tight">روما <span class="text-f1red text-sm font-normal">ROMA AI</span></h1>
+            </div>
+            <div class="text-xs text-gray-500 font-mono tracking-widest">LIVE 2026</div>
+        </div>
+        
+        <div class="flex space-x-6 space-x-reverse text-sm font-semibold text-gray-400">
+            <button onclick="switchTab('chatTab', this)" class="nav-btn active pb-2 transition-all hover:text-white">💬 الدردشة</button>
+            <button onclick="switchTab('analyticsTab', this)" class="nav-btn pb-2 transition-all hover:text-white">📊 تحليل السائقين</button>
+            <button onclick="switchTab('simTab', this)" class="nav-btn pb-2 transition-all hover:text-white">🎮 محاكي السباق</button>
+        </div>
+    </header>
+
+    <div id="chatTab" class="tab-content active flex-1 overflow-hidden">
+        <main id="chatBox" class="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-hide bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]">
+            <div class="flex justify-start">
+                <div class="bg-panel rounded-2xl rounded-bl-none p-4 max-w-[85%] border-r-4 border-f1red shadow-md">
+                    <p class="font-semibold text-f1red mb-1 text-sm">روما 🤖</p>
+                    <p class="text-sm leading-relaxed">أهلاً بك يا بطل! أنا روما، مساعدك الشخصي لموسم 2026. كيف يمكنني مساعدتك اليوم؟</p>
+                </div>
+            </div>
+        </main>
+
+        <div class="bg-panel border-t border-gray-800 p-4 shadow-2xl z-20 relative">
+            <div class="mb-4 flex overflow-x-auto space-x-2 space-x-reverse pb-2 scrollbar-hide">
+                <button onclick="sendDirect('get_driver_standings', {}, '🏎️ ترتيب السائقين')" class="bg-gray-800 text-gray-300 px-4 py-2 rounded-full text-xs hover:bg-f1red hover:text-white transition-all whitespace-nowrap border border-gray-700">🏎️ ترتيب السائقين</button>
+                <button onclick="sendDirect('get_constructor_standings', {}, '🛡️ ترتيب الفرق')" class="bg-gray-800 text-gray-300 px-4 py-2 rounded-full text-xs hover:bg-f1red hover:text-white transition-all whitespace-nowrap border border-gray-700">🛡️ ترتيب الفرق</button>
+                <button onclick="sendDirect('predict_next_race', {}, '🔮 توقع السباق القادم')" class="bg-gray-800 text-gray-300 px-4 py-2 rounded-full text-xs hover:bg-f1red hover:text-white transition-all whitespace-nowrap border border-gray-700">🔮 توقع الفائز</button>
+                <button onclick="sendDirect('get_race_calendar', {}, '📅 جدول السباقات')" class="bg-gray-800 text-gray-300 px-4 py-2 rounded-full text-xs hover:bg-f1red hover:text-white transition-all whitespace-nowrap border border-gray-700">📅 الجدول</button>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button id="recordBtn" class="bg-f1red hover:bg-red-700 w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-lg active:scale-95">
+                    <i class="fas fa-microphone text-white text-lg"></i>
+                </button>
+                <div class="relative flex-1">
+                    <input type="text" id="textInput" placeholder="اسأل روما عن أي شيء..." class="w-full bg-gray-800 border border-gray-700 rounded-full py-3 px-6 text-sm focus:outline-none focus:border-f1red transition-all text-white">
+                </div>
+                <button id="sendBtn" class="bg-gray-700 hover:bg-gray-600 w-12 h-12 rounded-full flex items-center justify-center transition-all">
+                    <i class="fas fa-paper-plane text-white"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="analyticsTab" class="tab-content flex-1 overflow-y-auto p-4 md:p-8 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] relative">
+        
+        <div class="fixed top-20 left-10 w-96 h-96 bg-cyan-500/10 rounded-full blur-[120px] pointer-events-none"></div>
+        <div class="fixed bottom-10 right-10 w-96 h-96 bg-blue-600/5 rounded-full blur-[100px] pointer-events-none"></div>
+
+        <div class="w-full flex-1 h-full grid grid-cols-1 lg:grid-cols-12 gap-8 relative z-10">
+            
+            <div class="xl:col-span-3 lg:col-span-4 space-y-6 relative h-full">
+                <div class="sticky top-6 space-y-6">
+                    
+                    <div class="glass-panel p-6 rounded-2xl flex justify-between items-center neon-border-cyan transition-all">
+                        <div>
+                            <h2 class="text-xl font-black text-white tracking-wider">مقارنة الأداء <span class="text-cyan-400">DATA</span></h2>
+                            <p class="text-xs text-gray-400 mt-1 font-mono">HISTORICAL TELEMETRY v1.4</p>
+                        </div>
+                        <i class="fas fa-database text-3xl text-gray-700"></i>
+                    </div>
+
+                    <div class="glass-panel p-6 rounded-2xl border-t-2 border-t-cyan-500 neon-border-cyan transition-all">
+                        <h3 class="text-cyan-400 font-bold text-sm mb-5 flex items-center gap-2"><i class="fas fa-sliders-h"></i> محددات التحليل</h3>
+                        
+                        <div class="space-y-6">
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-2 font-bold">السائقين (اختر متعدد بالضغط على CTRL)</label>
+                                <select id="driverSelect" multiple class="w-full bg-gray-900/80 text-white rounded-xl p-2 text-sm border border-gray-700 h-40 focus:border-cyan-500 focus:outline-none custom-scrollbar font-bold transition-colors">
+                                    <option value="max_verstappen" selected class="p-2 mb-1 hover:bg-gray-800 rounded">ماكس فيرستابن</option>
+                                    <option value="lewis_hamilton" selected class="p-2 mb-1 hover:bg-gray-800 rounded">لويس هاميلتون</option>
+                                    <option value="charles_leclerc" class="p-2 mb-1 hover:bg-gray-800 rounded">شارل لوكلير</option>
+                                    <option value="lando_norris" class="p-2 mb-1 hover:bg-gray-800 rounded">لاندو نوريس</option>
+                                    <option value="oscar_piastri" class="p-2 mb-1 hover:bg-gray-800 rounded">أوسكار بياستري</option>
+                                    <option value="carlos_sainz" class="p-2 mb-1 hover:bg-gray-800 rounded">كارلوس ساينز</option>
+                                    <option value="george_russell" class="p-2 hover:bg-gray-800 rounded">جورج راسل</option>
+                                </select>
+                            </div>
+
+                            <div class="space-y-5 bg-gray-800/40 p-4 rounded-xl border border-gray-700/50">
+                                <div>
+                                    <div class="flex justify-between text-xs text-gray-300 mb-1"><label>من موسم</label><span id="val_startYear" class="font-mono text-cyan-400 font-bold">2018</span></div>
+                                    <input id="startYear" type="range" min="2010" max="2026" value="2018" class="w-full h-1 bg-gray-700 rounded-lg appearance-none" style="accent-color: #06b6d4;" oninput="document.getElementById('val_startYear').innerText = this.value">
+                                </div>
+                                <div>
+                                    <div class="flex justify-between text-xs text-gray-300 mb-1"><label>إلى موسم</label><span id="val_endYear" class="font-mono text-cyan-400 font-bold">2026</span></div>
+                                    <input id="endYear" type="range" min="2010" max="2026" value="2026" class="w-full h-1 bg-gray-700 rounded-lg appearance-none" style="accent-color: #06b6d4;" oninput="document.getElementById('val_endYear').innerText = this.value">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-2 font-bold">المقياس</label>
+                                <div class="relative">
+                                    <select id="metricSelect" class="w-full bg-gray-900/80 text-white font-bold rounded-xl p-3 appearance-none border border-gray-700 focus:border-cyan-500 focus:outline-none transition-colors">
+                                        <option value="points">النقاط الإجمالية</option>
+                                        <option value="wins">عدد الانتصارات</option>
+                                        <option value="podiums">مرات الصعود للبوديوم</option>
+                                        <option value="avg_finish">متوسط مركز الوصول</option>
+                                    </select>
+                                    <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                                        <i class="fas fa-chevron-down text-cyan-500"></i>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button onclick="loadChart()" class="w-full relative group overflow-hidden bg-cyan-600 hover:bg-cyan-500 text-white py-4 rounded-xl text-lg font-bold transition-all shadow-[0_0_20px_rgba(6,182,212,0.3)] hover:shadow-[0_0_30px_rgba(6,182,212,0.5)] active:scale-95 z-10 border border-cyan-400/50">
+                                <span class="relative z-10 flex items-center justify-center gap-2">
+                                    <i class="fas fa-chart-area"></i> رسم البيانات
+                                </span>
+                                <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="xl:col-span-9 lg:col-span-8 flex flex-col h-full">
+                <div class="glass-panel p-6 rounded-3xl border border-gray-700 shadow-[0_0_30px_rgba(6,182,212,0.05)] flex-1 w-full h-full min-h-[600px] flex flex-col relative overflow-hidden neon-border-cyan">
+                    
+                    <div class="absolute inset-0 opacity-[0.03] pointer-events-none overflow-hidden font-mono text-[10px] text-left p-4 leading-relaxed text-cyan-500">
+                        SELECT season, SUM(points) FROM results<br>WHERE driver_id IN (X, Y)<br>GROUP BY season ORDER BY season<br><br>RENDERING CHART DATA...<br>CANVAS CONTEXT: 2D<br>ANTI-ALIASING: ENABLED<br>STATUS: 200 OK
+                    </div>
+
+                    <div class="flex justify-between items-center mb-6 relative z-10 border-b border-gray-700/50 pb-4">
+                        <h3 class="text-lg text-white font-bold tracking-wide flex items-center gap-2">
+                            <i class="fas fa-project-diagram text-cyan-400"></i> شاشة التحليل البياني
+                        </h3>
+                        <div class="flex gap-2">
+                            <span class="bg-gray-800 text-[10px] text-cyan-500 px-2 py-1 rounded font-mono border border-cyan-900/50">LIVE RENDER</span>
+                        </div>
+                    </div>
+
+                    <div class="flex-1 w-full relative z-10">
+                        <canvas id="analyticsChart" class="w-full h-full"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="simTab" class="tab-content flex-1 overflow-y-auto p-4 md:p-8 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] relative">
+        
+        <div class="fixed top-20 right-10 w-96 h-96 bg-f1red/10 rounded-full blur-[120px] pointer-events-none"></div>
+        <div class="fixed bottom-10 left-10 w-96 h-96 bg-cyan-500/5 rounded-full blur-[100px] pointer-events-none"></div>
+
+        <div class="w-full flex-1 h-full grid grid-cols-1 lg:grid-cols-12 gap-8 relative z-10">
+            
+            <div class="xl:col-span-8 lg:col-span-8 space-y-6">
+                
+                <div class="glass-panel p-6 rounded-2xl flex justify-between items-center neon-border transition-all">
+                    <div>
+                        <h2 class="text-2xl font-black text-white tracking-wider">نظام التوقع الاستراتيجي <span class="text-f1red">AI</span></h2>
+                        <p class="text-xs text-gray-400 mt-1 font-mono">XGBOOST PREDICTION ENGINE v2.0</p>
+                    </div>
+                    <i class="fas fa-microchip text-4xl text-gray-700"></i>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    
+                    <div class="glass-panel p-6 rounded-2xl border-t-2 border-t-cyan-500 neon-border transition-all">
+                        <h3 class="text-cyan-400 font-bold text-sm mb-5 flex items-center gap-2"><i class="fas fa-flag-checkered"></i> ظروف السباق والسيارة</h3>
+                        <div class="space-y-5">
+                            <div>
+                                <div class="flex justify-between text-xs text-gray-300 mb-1"><label>مركز الانطلاق (Grid)</label><span id="val_grid">1</span></div>
+                                <input id="sim_grid" type="range" min="1" max="20" value="1" class="w-full h-1 bg-gray-700 rounded-lg appearance-none" oninput="document.getElementById('val_grid').innerText = this.value">
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-xs text-gray-300 mb-1"><label>مرحلة الموسم (Season Stage)</label><span id="val_stg">0.5</span></div>
+                                <input id="sim_stg" type="range" min="0" max="1" step="0.05" value="0.5" class="w-full h-1 bg-gray-700 rounded-lg appearance-none" oninput="document.getElementById('val_stg').innerText = this.value">
+                            </div>
+                            <div class="grid grid-cols-3 gap-3 pt-2">
+                                <div class="bg-gray-800/50 p-2 rounded-lg text-center border border-gray-700">
+                                    <label class="block text-[10px] text-gray-400 mb-1">صف أول</label>
+                                    <select id="sim_front" class="bg-transparent text-white text-sm font-bold focus:outline-none w-full text-center appearance-none"><option value="1">نعم</option><option value="0">لا</option></select>
+                                </div>
+                                <div class="bg-gray-800/50 p-2 rounded-lg text-center border border-gray-700">
+                                    <label class="block text-[10px] text-gray-400 mb-1">أفضل 5</label>
+                                    <select id="sim_top5" class="bg-transparent text-white text-sm font-bold focus:outline-none w-full text-center appearance-none"><option value="1">نعم</option><option value="0">لا</option></select>
+                                </div>
+                                <div class="bg-gray-800/50 p-2 rounded-lg text-center border border-gray-700">
+                                    <label class="block text-[10px] text-gray-400 mb-1">سباق مطر</label>
+                                    <select id="sim_wet" class="bg-transparent text-white text-sm font-bold focus:outline-none w-full text-center appearance-none"><option value="0">لا</option><option value="1">نعم</option></select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass-panel p-6 rounded-2xl border-t-2 border-t-f1red neon-border transition-all">
+                        <h3 class="text-f1red font-bold text-sm mb-5 flex items-center gap-2"><i class="fas fa-trophy"></i> وضع البطولة</h3>
+                        <div class="space-y-4">
+                            <div class="flex items-center gap-3 bg-gray-800/40 p-2 rounded-lg border border-gray-700/50">
+                                <div class="bg-gray-900 px-3 py-2 rounded text-xs text-gray-400 font-mono">P.</div>
+                                <input id="sim_cpos" type="number" value="1" min="1" max="22" class="bg-transparent text-white font-bold w-full focus:outline-none" placeholder="ترتيب السائق">
+                                <span class="text-xs text-gray-500 whitespace-nowrap">ترتيب السائق</span>
+                            </div>
+                            <div class="flex items-center gap-3 bg-gray-800/40 p-2 rounded-lg border border-gray-700/50">
+                                <div class="bg-gray-900 px-3 py-2 rounded text-xs text-gray-400 font-mono">PTS</div>
+                                <input id="sim_cpts" type="number" value="300" class="bg-transparent text-white font-bold w-full focus:outline-none" placeholder="نقاط السائق">
+                                <span class="text-xs text-gray-500 whitespace-nowrap">نقاط السائق</span>
+                            </div>
+                            <div class="flex items-center gap-3 bg-gray-800/40 p-2 rounded-lg border border-gray-700/50">
+                                <div class="bg-gray-900 px-3 py-2 rounded text-xs text-gray-400 font-mono">T.P</div>
+                                <input id="sim_tpos" type="number" value="1" min="1" max="10" class="bg-transparent text-white font-bold w-full focus:outline-none" placeholder="ترتيب الفريق">
+                                <span class="text-xs text-gray-500 whitespace-nowrap">ترتيب الفريق</span>
+                            </div>
+                            <div class="flex items-center gap-3 bg-gray-800/40 p-2 rounded-lg border border-gray-700/50">
+                                <div class="bg-gray-900 px-3 py-2 rounded text-xs text-gray-400 font-mono">TPT</div>
+                                <input id="sim_tpts" type="number" value="500" class="bg-transparent text-white font-bold w-full focus:outline-none" placeholder="نقاط الفريق">
+                                <span class="text-xs text-gray-500 whitespace-nowrap">نقاط الفريق</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass-panel p-6 rounded-2xl col-span-1 md:col-span-2 border border-gray-700/50 neon-border transition-all">
+                        <h3 class="text-white font-bold text-sm mb-5 flex items-center gap-2"><i class="fas fa-chart-line text-green-400"></i> الأداء الأخير (آخر 5 سباقات)</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div>
+                                <div class="flex justify-between text-xs text-gray-300 mb-1"><label>معدل الفوز (Win Rate)</label><span id="val_win">0.6</span></div>
+                                <input id="sim_win" type="range" min="0" max="1" step="0.1" value="0.6" class="w-full h-1 bg-gray-700 rounded-lg appearance-none" oninput="document.getElementById('val_win').innerText = this.value">
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-xs text-gray-300 mb-1"><label>معدل البوديوم (Podium Rate)</label><span id="val_pod">0.8</span></div>
+                                <input id="sim_pod" type="range" min="0" max="1" step="0.1" value="0.8" class="w-full h-1 bg-gray-700 rounded-lg appearance-none" oninput="document.getElementById('val_pod').innerText = this.value">
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-xs text-gray-300 mb-1"><label>متوسط المركز (Avg Finish)</label><span id="val_avg">2.0</span></div>
+                                <input id="sim_avg" type="range" min="1" max="20" step="0.1" value="2.0" class="w-full h-1 bg-gray-700 rounded-lg appearance-none" oninput="document.getElementById('val_avg').innerText = this.value">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="xl:col-span-4 lg:col-span-4 relative h-full">
+                <div class="sticky top-6 glass-panel p-8 rounded-3xl border border-gray-700 shadow-[0_0_30px_rgba(225,6,0,0.1)] flex flex-col items-center text-center overflow-hidden neon-border">
+                    
+                    <div class="absolute inset-0 opacity-5 pointer-events-none overflow-hidden font-mono text-[8px] text-left p-2 leading-none text-green-500">
+                        def predict(X):<br>&nbsp;&nbsp;return model.predict_proba(X)<br>loading weights...<br>0x7F8B92A1... OK
+                    </div>
+
+                    <h3 class="text-sm text-gray-400 font-bold mb-8 uppercase tracking-[0.2em] relative z-10">AI Win Probability</h3>
+                    
+                    <div class="relative w-48 h-48 flex items-center justify-center mb-8 z-10 group">
+                        <div class="absolute inset-0 rounded-full border-4 border-gray-800"></div>
+                        <div class="absolute inset-0 rounded-full border-4 border-t-f1red border-r-f1red border-b-transparent border-l-transparent opacity-80 group-hover:rotate-180 transition-transform duration-1000 ease-in-out"></div>
+                        <div class="absolute inset-2 rounded-full border border-gray-700/50"></div>
+                        <div class="absolute inset-0 bg-f1red/5 rounded-full blur-xl"></div>
+                        
+                        <p id="simResult" class="text-5xl font-black text-white drop-shadow-[0_0_15px_rgba(225,6,0,0.8)] tabular-nums">--%</p>
+                    </div>
+
+                    <button onclick="runSimulator()" class="w-full relative group overflow-hidden bg-f1red hover:bg-red-700 text-white py-4 rounded-xl text-lg font-bold transition-all shadow-[0_0_20px_rgba(225,6,0,0.3)] hover:shadow-[0_0_30px_rgba(225,6,0,0.5)] active:scale-95 z-10 border border-red-500/50">
+                        <span class="relative z-10 flex items-center justify-center gap-2">
+                            <i class="fas fa-bolt"></i> تشغيل المحاكاة
+                        </span>
+                        <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
+                    </button>
+
+                    <div class="w-full mt-6 flex justify-between items-center text-xs text-gray-500 border-t border-gray-700/50 pt-4 z-10">
+                        <span class="flex items-center gap-1"><i class="fas fa-check-circle text-green-500"></i> XGBoost Engine</span>
+                        <span>Latency: <span id="sim_latency">--</span>ms</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // --- 1. Navigation Logic ---
+        function switchTab(tabId, btn) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active', 'border-bottom', 'border-f1red', 'text-white'));
+            
+            document.getElementById(tabId).classList.add('active');
+            btn.classList.add('active', 'text-white');
+            
+            if(tabId === 'analyticsTab' && !window.myChart) loadChart();
+        }
+
+        // --- 2. Chat & Voice Logic ---
+        const chatBox = document.getElementById('chatBox');
+        const textInput = document.getElementById('textInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const recordBtn = document.getElementById('recordBtn');
+
+        function appendUserMessage(text) {
+            chatBox.insertAdjacentHTML('beforeend', `<div class="flex justify-end animate-fade-in"><div class="bg-f1red rounded-2xl rounded-br-none p-3 max-w-[80%] shadow-md"><p class="text-sm font-semibold mb-1 opacity-80">أنت 👤</p><p class="text-sm">${text}</p></div></div>`);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function appendBotMessage(text, latency = null) {
+            const latStr = latency ? `<span class="text-[10px] text-gray-500 mt-2 block">⏱️ استجابة: ${latency} ثانية</span>` : '';
+            chatBox.insertAdjacentHTML('beforeend', `<div class="flex justify-start animate-fade-in"><div class="bg-panel rounded-2xl rounded-bl-none p-4 max-w-[85%] border-r-4 border-f1red shadow-md"><p class="font-semibold text-f1red mb-1 text-sm">روما 🤖</p><p class="bot-message text-sm leading-relaxed">${text}</p>${latStr}</div></div>`);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function showLoading() {
+            chatBox.insertAdjacentHTML('beforeend', `<div id="loader" class="flex justify-start"><div class="bg-panel rounded-xl p-3 text-xs text-gray-400 loading-dots">روما تفكر</div></div>`);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function hideLoading() {
+            const loader = document.getElementById('loader');
+            if(loader) loader.remove();
+        }
+
+        async function sendDirect(intent, entities, displayText) {
+            appendUserMessage(displayText);
+            showLoading();
+            const startTime = Date.now();
+            try {
+                const response = await fetch('http://127.0.0.1:8000/roma/direct', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ intent: intent, entities: entities })
+                });
+                const data = await response.json();
+                hideLoading();
+                appendBotMessage(data.response, ((Date.now() - startTime) / 1000).toFixed(2));
+            } catch (error) { hideLoading(); appendBotMessage("عذراً، تعذر الاتصال بالسيرفر."); }
+        }
+
+        async function sendText() {
+            const text = textInput.value.trim();
+            if(!text) return;
+            appendUserMessage(text);
+            textInput.value = '';
+            showLoading();
+            const startTime = Date.now();
+            try {
+                const response = await fetch('http://127.0.0.1:8000/roma/text', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: text }) 
+                });
+                const data = await response.json();
+                hideLoading();
+                appendBotMessage(data.response, ((Date.now() - startTime) / 1000).toFixed(2));
+            } catch (error) { hideLoading(); appendBotMessage("حدث خطأ في السيرفر."); }
+        }
+
+        sendBtn.onclick = sendText;
+        textInput.onkeypress = (e) => { if(e.key === 'Enter') sendText(); };
+
+        let mediaRecorder;
+        let audioChunks = [];
+        let isRecording = false;
+
+        recordBtn.addEventListener('click', async () => {
+            if (!isRecording) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    mediaRecorder.ondataavailable = event => { audioChunks.push(event.data); };
+                    mediaRecorder.onstop = async () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                        audioChunks = [];
+                        sendAudio(audioBlob);
+                    };
+                    mediaRecorder.start();
+                    isRecording = true;
+                    recordBtn.classList.replace('bg-f1red', 'bg-red-800');
+                    recordBtn.classList.add('animate-pulse');
+                    textInput.placeholder = "جاري التسجيل... اضغط على المايك للإرسال";
+                    textInput.disabled = true;
+                } catch (err) { appendBotMessage("تأكد من إعطاء صلاحيات المايكروفون."); }
+            } else {
+                mediaRecorder.stop();
+                isRecording = false;
+                recordBtn.classList.replace('bg-red-800', 'bg-f1red');
+                recordBtn.classList.remove('animate-pulse');
+                textInput.placeholder = "اسأل روما عن أي شيء...";
+                textInput.disabled = false;
+            }
+        });
+
+        async function sendAudio(blob) {
+            showLoading();
+            const startTime = Date.now();
+            const formData = new FormData();
+            formData.append('audio', blob, 'recording.webm');
+            try {
+                const response = await fetch('http://127.0.0.1:8000/roma', { method: 'POST', body: formData });
+                const data = await response.json();
+                hideLoading();
+                appendUserMessage(data.transcription ? "🎤 " + data.transcription : "🎤 [مقطع صوتي]");
+                appendBotMessage(data.response || JSON.stringify(data), ((Date.now() - startTime) / 1000).toFixed(2));
+            } catch (error) { hideLoading(); appendBotMessage("حدث خطأ أثناء إرسال الصوت."); }
+        }
+
+        // --- 3. Analytics Chart Logic ---
+        let myChart = null;
+        async function loadChart() {
+            const select = document.getElementById('driverSelect');
+            const drivers = Array.from(select.selectedOptions).map(opt => opt.value);
+            const req = {
+                driver_ids: drivers,
+                start_year: parseInt(document.getElementById('startYear').value),
+                end_year: parseInt(document.getElementById('endYear').value),
+                metric: document.getElementById('metricSelect').value
+            };
+
+            try {
+                const res = await fetch('http://127.0.0.1:8000/api/compare', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(req)
+                });
+                const data = await res.json();
+
+                const ctx = document.getElementById('analyticsChart').getContext('2d');
+                if(myChart) myChart.destroy();
+                
+                Chart.defaults.color = '#8899AA';
+                Chart.defaults.font.family = 'Cairo';
+
+                myChart = new Chart(ctx, {
+                    type: 'line',
+                    data: data,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: { reverse: req.metric === 'avg_finish', grid: { color: 'rgba(255,255,255,0.05)' } },
+                            x: { grid: { color: 'rgba(255,255,255,0.05)' } }
+                        },
+                        plugins: { legend: { position: 'bottom', labels: { color: 'white', padding: 20, font: {size: 14} } } },
+                        elements: { point: { radius: 4, hoverRadius: 6 } }
+                    }
+                });
+            } catch(e) { console.error("Error loading chart data", e); }
+        }
+
+        // --- 4. Simulator Logic ---
+        async function runSimulator() {
+            const startTime = Date.now();
+            document.getElementById('simResult').innerText = "...";
+            document.getElementById('sim_latency').innerText = "--";
+            
+            const req = {
+                grid_position: parseInt(document.getElementById('sim_grid').value),
+                front_row: parseInt(document.getElementById('sim_front').value),
+                top5_grid: parseInt(document.getElementById('sim_top5').value),
+                champ_position: parseInt(document.getElementById('sim_cpos').value),
+                champ_points: parseInt(document.getElementById('sim_cpts').value),
+                champ_wins: 0, 
+                team_position: parseInt(document.getElementById('sim_tpos').value),
+                team_points: parseInt(document.getElementById('sim_tpts').value),
+                avg_finish_last5: parseFloat(document.getElementById('sim_avg').value),
+                win_rate_last5: parseFloat(document.getElementById('sim_win').value),
+                podium_rate_last5: parseFloat(document.getElementById('sim_pod').value),
+                dnf_rate_last5: 0,
+                circuit_win_rate: 0.2,
+                season_stage: parseFloat(document.getElementById('sim_stg').value),
+                is_wet_race: parseInt(document.getElementById('sim_wet').value)
+            };
+
+            try {
+                const res = await fetch('http://127.0.0.1:8000/api/simulate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(req)
+                });
+                const data = await res.json();
+                
+                // FIXED: Using Number(val).toFixed(1) to prevent floating-point decimals
+                document.getElementById('simResult').innerText = Number(data.win_probability).toFixed(1) + "%";
+                document.getElementById('sim_latency').innerText = (Date.now() - startTime);
+            } catch (e) {
+                document.getElementById('simResult').innerText = "ERR";
+                console.error("Simulator error", e);
+            }
+        }
+    </script>
+</body>
+</html>

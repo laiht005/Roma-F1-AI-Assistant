@@ -6,11 +6,9 @@ from transformers import WhisperProcessor, WhisperForConditionalGeneration
 from huggingface_hub import login
 import torch
 
-import os
 from huggingface_hub import login
-hf_token = os.getenv("HF_TOKEN")
-if hf_token:
-    login(hf_token)
+#hf_token=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
+login(hf_token)
 processor=WhisperProcessor.from_pretrained("Laith05/roma-whisper-small-levantine")
 model=WhisperForConditionalGeneration.from_pretrained("Laith05/roma-whisper-small-levantine")
 model.eval()
